@@ -4,7 +4,21 @@ import 'package:exercise/models/user.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-class Home extends StatelessWidget {
+class Home extends StatefulWidget {
+  @override
+  _HomeState createState() => _HomeState();
+}
+
+class _HomeState extends State<Home> {
+  final apiKey = "";
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -41,7 +55,7 @@ class Home extends StatelessWidget {
       future: _future(),
       builder: (context, snapshot) {
         if (snapshot.hasData) {
-          return _listView(snapshot.data);
+          return _content(snapshot.data);
         }
 
         if (snapshot.hasError) {
@@ -65,9 +79,58 @@ class Home extends StatelessWidget {
     );
   }
 
+  Widget _content(List<User> users) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Column(
+        children: [
+          _filterByCity(),
+          Expanded(child: _listView(users)),
+        ],
+      ),
+    );
+  }
+
+  Widget _filterByCity() {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Row(
+        children: [
+          Expanded(child: _textField()),
+          _filterButton(),
+        ],
+      ),
+    );
+  }
+
+  Widget _textField() {
+    return TextField(
+      textCapitalization: TextCapitalization.words,
+      decoration: InputDecoration(
+        border: OutlineInputBorder(),
+        hintText: 'Filter By City',
+      ),
+      controller: _controller,
+    );
+  }
+
+  Widget _filterButton() {
+    return Padding(
+      padding: const EdgeInsets.only(left: 8.0),
+      child: RaisedButton(
+        onPressed: _onFilterButtonPressed,
+        child: const Text("Filter"),
+      ),
+    );
+  }
+
+  void _onFilterButtonPressed() {
+    print("Button pressed");
+  }
+
   Widget _listView(List<User> users) {
     return ListView.builder(
-      padding: const EdgeInsets.all(8.0),
+      shrinkWrap: true,
       itemCount: users.length,
       itemBuilder: (context, index) {
         return _listItem(users[index]);
