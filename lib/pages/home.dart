@@ -10,8 +10,9 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  final apiKey = "";
   final _controller = TextEditingController();
+
+  String _query = "";
 
   @override
   void dispose() {
@@ -35,35 +36,56 @@ class _HomeState extends State<Home> {
 
   Future<List<User>> _future() async {
     final response = await http.get(
-      Uri.parse('https://exercise-646d.restdb.io/rest/group-1'),
+      _getUri(),
       headers: {
         'x-apikey': '5c5c7076f210985199db5488',
       },
     );
 
     if (response.statusCode == 200) {
-      return (json.decode(response.body) as List)
+      final users = (json.decode(response.body) as List)
           .map((i) => User.fromJson(i))
           .toList();
+
+      return users;
     } else {
       throw Exception('Failed to load users');
     }
   }
 
+  Uri _getUri() {
+    Uri uri;
+
+    if (_query.isEmpty) {
+      uri = Uri(
+        scheme: 'https',
+        host: 'exercise-646d.restdb.io',
+        path: 'rest/group-1',
+      );
+    } else {
+      uri = Uri(
+        scheme: 'https',
+        host: 'exercise-646d.restdb.io',
+        path: 'rest/group-1',
+        queryParameters: {'q': '{"CITY":"$_query"}'},
+      );
+    }
+
+    return uri;
+  }
+
   Widget _body() {
-    return FutureBuilder<List<User>>(
-      future: _future(),
-      builder: (context, snapshot) {
-        if (snapshot.hasData) {
-          return _content(snapshot.data);
-        }
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Column(
+        children: [_filterByCity(), _content()],
+      ),
+    );
+  }
 
-        if (snapshot.hasError) {
-          return _showError(snapshot.error.toString());
-        }
-
-        return _showLoading();
-      },
+  Widget _showEmptyPrompt() {
+    return Center(
+      child: Text("No users in '$_query' found"),
     );
   }
 
@@ -79,15 +101,28 @@ class _HomeState extends State<Home> {
     );
   }
 
-  Widget _content(List<User> users) {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Column(
-        children: [
-          _filterByCity(),
-          Expanded(child: _listView(users)),
-        ],
-      ),
+  Widget _content() {
+    return FutureBuilder<List<User>>(
+      future: _future(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _showLoading();
+        }
+
+        if (snapshot.hasData) {
+          if (snapshot.data.isEmpty) {
+            return _showEmptyPrompt();
+          }
+
+          return Expanded(child: _listView(snapshot.data));
+        }
+
+        if (snapshot.hasError) {
+          return _showError(snapshot.error.toString());
+        }
+
+        return _showLoading();
+      },
     );
   }
 
@@ -125,7 +160,9 @@ class _HomeState extends State<Home> {
   }
 
   void _onFilterButtonPressed() {
-    print("Button pressed");
+    setState(() {
+      _query = _controller.text;
+    });
   }
 
   Widget _listView(List<User> users) {
