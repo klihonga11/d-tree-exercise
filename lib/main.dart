@@ -1,4 +1,4 @@
-import 'package:exercise/home.dart';
+import 'package:exercise/pages/home.dart';
 import 'package:flutter/material.dart';
 
 void main() {
